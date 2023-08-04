@@ -99,81 +99,7 @@ public class RNBranchModule extends ReactContextBaseJavaModule {
 
     private AgingHash<String, BranchUniversalObject> mUniversalObjectMap = new AgingHash<>(AGING_HASH_TTL);
 
-    private static Branch.BranchReferralInitListener referralInitListener = new Branch.BranchReferralInitListener(){
-
-        private Activity mmActivity = null;
-        @Override
-        public void onInitFinished(JSONObject referringParams, BranchError error) {
-            Log.d(REACT_CLASS,"onInitFinished referringParams " + referringParams);
-
-                // react native currently expects this to never be null
-            if (referringParams == null) {
-                referringParams = new JSONObject();
-            }
-
-            Log.d(REACT_CLASS, "onInitFinished");
-            JSONObject result = new JSONObject();
-
-            try {
-                result.put(NATIVE_INIT_SESSION_FINISHED_EVENT_PARAMS, referringParams);
-                result.put(NATIVE_INIT_SESSION_FINISHED_EVENT_ERROR, error != null ? error.getMessage() : JSONObject.NULL);
-                result.put(NATIVE_INIT_SESSION_FINISHED_EVENT_URI, isNewIntent && uri != null ? uri.toString() : JSONObject.NULL);
-            }
-            catch (JSONException e) {
-                Log.e(REACT_CLASS, e.getMessage());
-            }
-            initSessionResult = result;
-
-            BranchUniversalObject branchUniversalObject =  BranchUniversalObject.getReferredBranchUniversalObject();
-            LinkProperties linkProperties = LinkProperties.getReferredLinkProperties();
-
-            if (initListener != null) {
-                Log.d(REACT_CLASS,"onInitFinished " + branchUniversalObject + " " + linkProperties + " error " +error);
-                initListener.onInitFinished(branchUniversalObject, linkProperties, error);
-            }
-            generateLocalBroadcast(referringParams, uri, branchUniversalObject, linkProperties, error);
-        }
-
-        private Branch.BranchReferralInitListener init(Activity activity) {
-            mmActivity = activity;
-            return this;
-        }
-
-        private void generateLocalBroadcast(JSONObject referringParams,
-                                                Uri uri,
-                                                BranchUniversalObject branchUniversalObject,
-                                                LinkProperties linkProperties,
-                                                BranchError error) {
-                
-                Intent broadcastIntent = new Intent(NATIVE_INIT_SESSION_FINISHED_EVENT);
-
-            if (referringParams != null) {
-                broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_PARAMS, referringParams.toString());
-            }
-
-            if (branchUniversalObject != null) {
-                broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_BRANCH_UNIVERSAL_OBJECT, branchUniversalObject);
-            }
-
-            if (linkProperties != null) {
-                broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_LINK_PROPERTIES, linkProperties);
-            }
-
-                /*
-                 * isNewIntent is a capture of the value of mNewIntent above, so does not change when
-                 * mNewIntent changes in onNewIntent.
-                 */
-            if (isNewIntent && uri != null) {
-                broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_URI, uri.toString());
-            }
-
-            if (error != null) {
-                broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_ERROR, error.getMessage());
-            }
-
-            LocalBroadcastManager.getInstance(mmActivity).sendBroadcast(broadcastIntent);
-        }
-    }.init(reactActivity);;
+    private static Branch.BranchReferralInitListener referralInitListener = null;
 
     public static void getAutoInstance(Context context) {
         Branch.registerPlugin(PLUGIN_NAME, io.branch.rnbranch.BuildConfig.RNBRANCH_VERSION);
@@ -206,6 +132,82 @@ public class RNBranchModule extends ReactContextBaseJavaModule {
 
         mActivity = reactActivity;
         final boolean isNewIntent = mNewIntent;
+        referralInitListener = new Branch.BranchReferralInitListener(){
+
+            private Activity mmActivity = null;
+
+            @Override
+            public void onInitFinished(JSONObject referringParams, BranchError error) {
+                Log.d(REACT_CLASS,"onInitFinished referringParams " + referringParams);
+
+                // react native currently expects this to never be null
+                if (referringParams == null) {
+                    referringParams = new JSONObject();
+                }
+
+                Log.d(REACT_CLASS, "onInitFinished");
+                JSONObject result = new JSONObject();
+
+                try {
+                    result.put(NATIVE_INIT_SESSION_FINISHED_EVENT_PARAMS, referringParams);
+                    result.put(NATIVE_INIT_SESSION_FINISHED_EVENT_ERROR, error != null ? error.getMessage() : JSONObject.NULL);
+                    result.put(NATIVE_INIT_SESSION_FINISHED_EVENT_URI, isNewIntent && uri != null ? uri.toString() : JSONObject.NULL);
+                }
+                catch (JSONException e) {
+                    Log.e(REACT_CLASS, e.getMessage());
+                }
+                initSessionResult = result;
+
+                BranchUniversalObject branchUniversalObject =  BranchUniversalObject.getReferredBranchUniversalObject();
+                LinkProperties linkProperties = LinkProperties.getReferredLinkProperties();
+
+                if (initListener != null) {
+                    Log.d(REACT_CLASS,"onInitFinished " + branchUniversalObject + " " + linkProperties + " error " +error);
+                    initListener.onInitFinished(branchUniversalObject, linkProperties, error);
+                }
+                generateLocalBroadcast(referringParams, uri, branchUniversalObject, linkProperties, error);
+            }
+
+            private Branch.BranchReferralInitListener init(Activity activity) {
+                mmActivity = activity;
+                return this;
+            }
+
+            private void generateLocalBroadcast(JSONObject referringParams,
+                                                Uri uri,
+                                                BranchUniversalObject branchUniversalObject,
+                                                LinkProperties linkProperties,
+                                                BranchError error) {
+                
+                Intent broadcastIntent = new Intent(NATIVE_INIT_SESSION_FINISHED_EVENT);
+
+                if (referringParams != null) {
+                    broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_PARAMS, referringParams.toString());
+                }
+
+                if (branchUniversalObject != null) {
+                    broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_BRANCH_UNIVERSAL_OBJECT, branchUniversalObject);
+                }
+
+                if (linkProperties != null) {
+                    broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_LINK_PROPERTIES, linkProperties);
+                }
+
+                /*
+                 * isNewIntent is a capture of the value of mNewIntent above, so does not change when
+                 * mNewIntent changes in onNewIntent.
+                 */
+                if (isNewIntent && uri != null) {
+                    broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_URI, uri.toString());
+                }
+
+                if (error != null) {
+                    broadcastIntent.putExtra(NATIVE_INIT_SESSION_FINISHED_EVENT_ERROR, error.getMessage());
+                }
+
+                LocalBroadcastManager.getInstance(mmActivity).sendBroadcast(broadcastIntent);
+            }
+        }.init(reactActivity);
 
         notifyJSOfInitSessionStart(reactActivity, uri);
         
